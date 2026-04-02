@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PHP Sessions — دليل شامل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Noto+Kufi+Arabic:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --accent: #7c3aed;
+    --accent2: #06b6d4;
+    --accent3: #f59e0b;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --border: #2a2a3a;
+    --green: #10b981;
+    --red: #ef4444;
+    --code-bg: #0d0d16;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Kufi Arabic', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    overflow-x: hidden;
+  }
+
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 6rem 8vw;
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124,58,237,0.18) 0%, transparent 70%);
+    left: -100px; top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    animation: pulse 6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { transform: translateY(-50%) scale(1); opacity: 1; }
+    50% { transform: translateY(-50%) scale(1.1); opacity: 0.7; }
+  }
+
+  .hero-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent2);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fadeSlideDown 0.8s ease both;
+  }
+
+  .hero-label::before {
+    content: '';
+    width: 30px; height: 1px;
+    background: var(--accent2);
+  }
+
+  .hero-title {
+    font-size: clamp(3rem, 10vw, 7rem);
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    animation: fadeSlideDown 0.8s 0.1s ease both;
+  }
+
+  .hero-title .accent { color: var(--accent); }
+  .hero-title .mono {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--accent2);
+    font-size: 0.6em;
+    display: block;
+  }
+
+  .hero-desc {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 500px;
+    margin-bottom: 3rem;
+    animation: fadeSlideDown 0.8s 0.2s ease both;
+  }
+
+  .hero-badges {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    animation: fadeSlideDown 0.8s 0.3s ease both;
+  }
+
+  .badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    border: 1px solid;
+  }
+  .badge-purple { border-color: var(--accent); color: var(--accent); background: rgba(124,58,237,0.1); }
+  .badge-cyan   { border-color: var(--accent2); color: var(--accent2); background: rgba(6,182,212,0.1); }
+  .badge-amber  { border-color: var(--accent3); color: var(--accent3); background: rgba(245,158,11,0.1); }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 3rem;
+    left: 8vw;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    animation: fadeSlideDown 0.8s 0.5s ease both;
+  }
+  .scroll-line {
+    width: 40px; height: 1px;
+    background: var(--muted);
+    position: relative;
+    overflow: hidden;
+  }
+  .scroll-line::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent2);
+    transform: translateX(-100%);
+    animation: scanline 2s ease-in-out infinite;
+  }
+  @keyframes scanline { to { transform: translateX(100%); } }
+
+  /* Sections */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 8vw;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .section-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  h2 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 900;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--accent2);
+  }
+
+  p { color: var(--muted); margin-bottom: 1.25rem; }
+
+  /* Divider */
+  .divider {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Cards grid */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 2rem 0;
+  }
+
+  .card {
+    background: var(--surface);
+    padding: 1.75rem;
+    transition: background 0.2s;
+    cursor: default;
+  }
+  .card:hover { background: var(--surface2); }
+
+  .card-icon {
+    width: 40px; height: 40px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  .icon-purple { background: rgba(124,58,237,0.2); }
+  .icon-cyan   { background: rgba(6,182,212,0.2); }
+  .icon-amber  { background: rgba(245,158,11,0.2); }
+  .icon-green  { background: rgba(16,185,129,0.2); }
+
+  .card h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .card p  { font-size: 0.875rem; color: var(--muted); margin: 0; }
+
+  /* Code block */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+  }
+
+  .code-dots { display: flex; gap: 6px; }
+  .code-dots span {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .dot-red    { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green  { background: #28c840; }
+
+  .code-filename {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .copy-btn {
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.25rem 0.75rem;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { color: var(--accent2); border-color: var(--accent2); }
+
+  pre {
+    padding: 1.5rem 1.25rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+
+  /* Syntax highlighting */
+  .kw   { color: #c084fc; }
+  .fn   { color: #60a5fa; }
+  .str  { color: #86efac; }
+  .var  { color: #f59e0b; }
+  .cmt  { color: #4b5563; font-style: italic; }
+  .num  { color: #fb923c; }
+  .op   { color: #e2e8f0; }
+  .php  { color: #a5b4fc; }
+
+  /* Steps timeline */
+  .timeline {
+    position: relative;
+    margin: 2rem 0;
+    padding-right: 2rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    right: 0; top: 24px; bottom: 24px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .timeline-item {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+  }
+
+  .timeline-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-right: -2.05rem;
+    z-index: 1;
+    position: relative;
+  }
+
+  .timeline-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    flex: 1;
+    transition: border-color 0.2s;
+  }
+  .timeline-content:hover { border-color: var(--accent); }
+  .timeline-content h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.35rem; }
+  .timeline-content p  { font-size: 0.85rem; color: var(--muted); margin: 0; }
+  code { font-family: 'IBM Plex Mono', monospace; color: var(--accent2); font-size: 0.875em; }
+
+  /* Security checklist */
+  .checklist {
+    display: grid;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    flex-direction: row-reverse;
+    transition: border-color 0.2s;
+  }
+  .check-item:hover { border-color: var(--green); }
+  .check-icon {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(16,185,129,0.15);
+    color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  /* Function table */
+  .fn-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    font-size: 0.875rem;
+  }
+  .fn-table th {
+    text-align: right;
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+    color: var(--accent2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .fn-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    vertical-align: top;
+  }
+  .fn-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .fn-table td:first-child { direction: ltr; text-align: left; }
+  .fn-name {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--accent3);
+    font-size: 0.82rem;
+  }
+
+  /* Footer */
+  footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 4rem 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+  footer span { color: var(--accent); }
+
+  /* Animations */
+  @keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Floating PHP badge */
+  .php-float {
+    position: fixed;
+    top: 1.5rem;
+    left: 2rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent2);
+    border: 1px solid rgba(6,182,212,0.3);
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(6,182,212,0.05);
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    z-index: 999;
+    transition: width 0.1s;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+<div class="php-float">PHP 8.x</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-label">دليل شامل ومفصل</div>
+  <h1 class="hero-title">
+    <span class="mono">session_start();</span>
+    PHP <span class="accent">Sessions</span>
+  </h1>
+  <p class="hero-desc">كل ما تحتاج معرفته عن إدارة الجلسات في PHP — من المفاهيم الأساسية إلى الأمان المتقدم، مع أمثلة كود حقيقية وقابلة للتطبيق.</p>
+  <div class="hero-badges">
+    <span class="badge badge-purple">تخزين على الخادم</span>
+    <span class="badge badge-cyan">Cookie للتعريف</span>
+    <span class="badge badge-amber">$_SESSION</span>
+  </div>
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    ابدأ القراءة
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- SECTION 1: What is a session -->
+<section class="reveal">
+  <span class="section-num">// 01</span>
+  <h2>ما هي الـ Session؟</h2>
+  <p>بروتوكول HTTP بطبيعته <strong style="color:var(--text)">stateless</strong> — أي أن كل طلب مستقل تمامًا ولا يتذكر الخادم من أنت. الـ Session هي الحل: تُخزِّن بيانات المستخدم على الخادم وتعطيه معرّفًا فريدًا (PHPSESSID) يُرسَل عبر Cookie للمتصفح.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon icon-cyan">🖥️</div>
+      <h4>التخزين على الخادم</h4>
+      <p>البيانات تُحفظ في ملفات مؤقتة على الخادم، لا في المتصفح — أكثر أمانًا من Cookies.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon icon-purple">🔑</div>
+      <h4>معرّف فريد</h4>
+      <p>كل مستخدم يحصل على session_id عشوائي طويل يربطه ببياناته المحفوظة.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon icon-amber">⏱️</div>
+      <h4>مؤقتة بطبيعتها</h4>
+      <p>تنتهي عند إغلاق المتصفح أو انتهاء المهلة المحددة من جانب الخادم.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon icon-green">🌐</div>
+      <h4>تعمل عبر الصفحات</h4>
+      <p>تتشارك البيانات بين جميع صفحات الموقع طوال فترة تسجيل الدخول.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 2: How it works -->
+<section class="reveal">
+  <span class="section-num">// 02</span>
+  <h2>كيف تعمل خطوة بخطوة</h2>
+  <p>فهم دورة حياة الـ Session يساعدك على استخدامها بشكل صحيح وتجنّب المشاكل الشائعة.</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-dot">01</div>
+      <div class="timeline-content">
+        <h4>استدعاء <code>session_start()</code></h4>
+        <p>PHP تتحقق من وجود Cookie بالاسم PHPSESSID. إن لم تجد، تُنشئ session_id جديدًا.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">02</div>
+      <div class="timeline-content">
+        <h4>إرسال الـ Cookie للمتصفح</h4>
+        <p>PHP ترسل هيدر Set-Cookie تلقائيًا يحمل الـ PHPSESSID — المتصفح يحفظه.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">03</div>
+      <div class="timeline-content">
+        <h4>تخزين البيانات في <code>$_SESSION</code></h4>
+        <p>تُكتب البيانات في ملف مؤقت على الخادم مرتبط بالـ session_id.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">04</div>
+      <div class="timeline-content">
+        <h4>الطلبات اللاحقة</h4>
+        <p>المتصفح يُرسل الـ PHPSESSID مع كل طلب، وPHP تُحمّل البيانات المناسبة تلقائيًا.</p>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-dot">05</div>
+      <div class="timeline-content">
+        <h4>إنهاء الجلسة</h4>
+        <p>عبر <code>session_destroy()</code> أو انتهاء المهلة أو إغلاق المتصفح.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 3: Basic code -->
+<section class="reveal">
+  <span class="section-num">// 03</span>
+  <h2>الكود الأساسي</h2>
+
+  <h3>بدء الجلسة وحفظ بيانات</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+      <span class="code-filename">index.php</span>
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    </div>
+    <pre><span class="php">&lt;?php</span>
+<span class="cmt">// يجب أن تكون أول شيء في الملف قبل أي إخراج</span>
+<span class="fn">session_start</span><span class="op">();</span>
+
+<span class="cmt">// تخزين البيانات</span>
+<span class="var">$_SESSION</span><span class="op">[</span><span class="str">'username'</span><span class="op">]</span>   <span class="op">=</span> <span class="str">'Ahmed'</span><span class="op">;</span>
+<span class="var">$_SESSION</span><span class="op">[</span><span class="str">'role'</span><span class="op">]</span>       <span class="op">=</span> <span class="str">'admin'</span><span class="op">;</span>
+<span class="var">$_SESSION</span><span class="op">[</span><span class="str">'login_time'</span><span class="op">]</span> <span class="op">=</span> <span class="fn">time</span><span class="op">();</span>
+
+<span class="kw">echo</span> <span class="str">"Session ID: "</span> <span class="op">.</span> <span class="fn">session_id</span><span class="op">();</span>
+<span class="php">?&gt;</span></pre>
+  </div>
+
+  <h3>قراءة البيانات في صفحة أخرى</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+      <span class="code-filename">dashboard.php</span>
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    </div>
+    <pre><span class="php">&lt;?php</span>
+<span class="fn">session_start</span><span class="op">();</span>
+
+<span class="cmt">// حماية الصفحة من غير المسجّلين</span>
+<span class="kw">if</span> <span class="op">(!</span><span class="fn">isset</span><span class="op">(</span><span class="var">$_SESSION</span><span class="op">[</span><span class="str">'username'</span><span class="op">])) {</span>
+    <span class="fn">header</span><span class="op">(</span><span class="str">"Location: login.php"</span><span class="op">);</span>
+    <span class="kw">exit</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="var">$name</span> <span class="op">=</span> <span class="fn">htmlspecialchars</span><span class="op">(</span><span class="var">$_SESSION</span><span class="op">[</span><span class="str">'username'</span><span class="op">]);</span>
+<span class="kw">echo</span> <span class="str">"مرحباً {</span><span class="var">$name</span><span class="str">}!"</span><span class="op">;</span>
+<span class="php">?&gt;</span></pre>
+  </div>
+
+  <h3>تسجيل الخروج بشكل آمن</h3>
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+      <span class="code-filename">logout.php</span>
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    </div>
+    <pre><span class="php">&lt;?php</span>
+<span class="fn">session_start</span><span class="op">();</span>
+
+<span class="cmt">// 1. حذف جميع متغيرات الجلسة</span>
+<span class="var">$_SESSION</span> <span class="op">= [];</span>
+
+<span class="cmt">// 2. حذف Cookie من المتصفح</span>
+<span class="kw">if</span> <span class="op">(</span><span class="fn">ini_get</span><span class="op">(</span><span class="str">"session.use_cookies"</span><span class="op">)) {</span>
+    <span class="var">$p</span> <span class="op">=</span> <span class="fn">session_get_cookie_params</span><span class="op">();</span>
+    <span class="fn">setcookie</span><span class="op">(</span><span class="fn">session_name</span><span class="op">(),</span> <span class="str">''</span><span class="op">,</span> <span class="fn">time</span><span class="op">() -</span> <span class="num">3600</span><span class="op">,</span>
+        <span class="var">$p</span><span class="op">[</span><span class="str">'path'</span><span class="op">],</span> <span class="var">$p</span><span class="op">[</span><span class="str">'domain'</span><span class="op">],</span>
+        <span class="var">$p</span><span class="op">[</span><span class="str">'secure'</span><span class="op">],</span> <span class="var">$p</span><span class="op">[</span><span class="str">'httponly'</span><span class="op">]</span>
+    <span class="op">);</span>
+<span class="op">}</span>
+
+<span class="cmt">// 3. تدمير الجلسة على الخادم</span>
+<span class="fn">session_destroy</span><span class="op">();</span>
+
+<span class="fn">header</span><span class="op">(</span><span class="str">"Location: login.php"</span><span class="op">);</span>
+<span class="kw">exit</span><span class="op">;</span>
+<span class="php">?&gt;</span></pre>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 4: Cart example -->
+<section class="reveal">
+  <span class="section-num">// 04</span>
+  <h2>مثال متقدم — سلة التسوق</h2>
+  <p>استخدام الـ Session لبناء سلة تسوق متكاملة تعمل عبر جميع صفحات المتجر.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+      <span class="code-filename">cart.php</span>
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    </div>
+    <pre><span class="php">&lt;?php</span>
+<span class="fn">session_start</span><span class="op">();</span>
+
+<span class="cmt">// تهيئة السلة</span>
+<span class="kw">if</span> <span class="op">(!</span><span class="fn">isset</span><span class="op">(</span><span class="var">$_SESSION</span><span class="op">[</span><span class="str">'cart'</span><span class="op">])) {</span>
+    <span class="var">$_SESSION</span><span class="op">[</span><span class="str">'cart'</span><span class="op">]</span> <span class="op">= [];</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="fn">addToCart</span><span class="op">(</span><span class="var">$id</span><span class="op">,</span> <span class="var">$name</span><span class="op">,</span> <span class="var">$price</span><span class="op">) {</span>
+    <span class="kw">if</span> <span class="op">(</span><span class="fn">isset</span><span class="op">(</span><span class="var">$_SESSION</span><span class="op">[</span><span class="str">'cart'</span><span class="op">][</span><span class="var">$id</span><span class="op">])) {</span>
+        <span class="var">$_SESSION</span><span class="op">[</span><span class="str">'cart'</span><span class="op">][</span><span class="var">$id</span><span class="op">][</span><span class="str">'qty'</span><span class="op">]++;</span>
+    <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span>
+        <span class="var">$_SESSION</span><span class="op">[</span><span class="str">'cart'</span><span class="op">][</span><span class="var">$id</span><span class="op">]</span> <span class="op">= [</span>
+            <span class="str">'name'</span>  <span class="op">=&gt;</span> <span class="var">$name</span><span class="op">,</span>
+            <span class="str">'price'</span> <span class="op">=&gt;</span> <span class="var">$price</span><span class="op">,</span>
+            <span class="str">'qty'</span>   <span class="op">=&gt;</span> <span class="num">1</span><span class="op">,</span>
+        <span class="op">];</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="kw">function</span> <span class="fn">getTotal</span><span class="op">() {</span>
+    <span class="var">$total</span> <span class="op">=</span> <span class="num">0</span><span class="op">;</span>
+    <span class="kw">foreach</span> <span class="op">(</span><span class="var">$_SESSION</span><span class="op">[</span><span class="str">'cart'</span><span class="op">]</span> <span class="kw">as</span> <span class="var">$item</span><span class="op">) {</span>
+        <span class="var">$total</span> <span class="op">+=</span> <span class="var">$item</span><span class="op">[</span><span class="str">'price'</span><span class="op">]</span> <span class="op">*</span> <span class="var">$item</span><span class="op">[</span><span class="str">'qty'</span><span class="op">];</span>
+    <span class="op">}</span>
+    <span class="kw">return</span> <span class="var">$total</span><span class="op">;</span>
+<span class="op">}</span>
+
+<span class="cmt">// استخدام</span>
+<span class="fn">addToCart</span><span class="op">(</span><span class="num">1</span><span class="op">,</span> <span class="str">'كتاب PHP'</span><span class="op">,</span> <span class="num">25.00</span><span class="op">);</span>
+<span class="fn">addToCart</span><span class="op">(</span><span class="num">2</span><span class="op">,</span> <span class="str">'دورة Laravel'</span><span class="op">,</span> <span class="num">99.00</span><span class="op">);</span>
+<span class="kw">echo</span> <span class="str">"الإجمالي: $"</span> <span class="op">.</span> <span class="fn">getTotal</span><span class="op">();</span>
+<span class="php">?&gt;</span></pre>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 5: Security -->
+<section class="reveal">
+  <span class="section-num">// 05</span>
+  <h2>الأمان أولًا</h2>
+  <p>الـ Session غير الآمنة هي بوابة للاختراق. هذه أهم الإعدادات التي يجب تطبيقها.</p>
+
+  <div class="checklist">
+    <div class="check-item">
+      <div class="check-icon">✓</div>
+      <div>
+        <strong style="color:var(--text);font-size:0.9rem">HttpOnly Cookie</strong>
+        <p style="margin:0;font-size:0.82rem;color:var(--muted)">يمنع JavaScript من الوصول إلى الـ Cookie — يحمي من XSS.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✓</div>
+      <div>
+        <strong style="color:var(--text);font-size:0.9rem">Secure Cookie</strong>
+        <p style="margin:0;font-size:0.82rem;color:var(--muted)">ترسل الـ Cookie فقط عبر HTTPS — مطلوب في بيئة الإنتاج.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✓</div>
+      <div>
+        <strong style="color:var(--text);font-size:0.9rem">session_regenerate_id()</strong>
+        <p style="margin:0;font-size:0.82rem;color:var(--muted)">جدّد معرّف الجلسة بعد تسجيل الدخول — يمنع Session Fixation.</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✓</div>
+      <div>
+        <strong style="color:var(--text);font-size:0.9rem">انتهاء صلاحية تلقائي</strong>
+        <p style="margin:0;font-size:0.82rem;color:var(--muted)">أنهِ الجلسة تلقائيًا بعد فترة خمول (30 دقيقة مثلًا).</p>
+      </div>
+    </div>
+    <div class="check-item">
+      <div class="check-icon">✓</div>
+      <div>
+        <strong style="color:var(--text);font-size:0.9rem">strict_mode</strong>
+        <p style="margin:0;font-size:0.82rem;color:var(--muted)">يرفض session_id غير المُنشأة من طرف الخادم.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <div class="code-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+      <span class="code-filename">secure_session.php</span>
+      <button class="copy-btn" onclick="copyCode(this)">copy</button>
+    </div>
+    <pre><span class="php">&lt;?php</span>
+<span class="cmt">// الإعدادات قبل session_start()</span>
+<span class="fn">ini_set</span><span class="op">(</span><span class="str">'session.cookie_httponly'</span><span class="op">,</span> <span class="num">1</span><span class="op">);</span>
+<span class="fn">ini_set</span><span class="op">(</span><span class="str">'session.cookie_secure'</span><span class="op">,</span>   <span class="num">1</span><span class="op">);</span>
+<span class="fn">ini_set</span><span class="op">(</span><span class="str">'session.use_strict_mode'</span><span class="op">,</span> <span class="num">1</span><span class="op">);</span>
+<span class="fn">ini_set</span><span class="op">(</span><span class="str">'session.cookie_samesite'</span><span class="op">,</span> <span class="str">'Lax'</span><span class="op">);</span>
+
+<span class="fn">session_start</span><span class="op">();</span>
+
+<span class="cmt">// تجديد المعرّف بعد تسجيل الدخول</span>
+<span class="fn">session_regenerate_id</span><span class="op">(</span><span class="kw">true</span><span class="op">);</span>
+
+<span class="cmt">// انتهاء صلاحية بعد 30 دقيقة</span>
+<span class="var">$timeout</span> <span class="op">=</span> <span class="num">1800</span><span class="op">;</span>
+<span class="kw">if</span> <span class="op">(</span><span class="fn">isset</span><span class="op">(</span><span class="var">$_SESSION</span><span class="op">[</span><span class="str">'last_activity'</span><span class="op">]) &&</span>
+    <span class="op">(</span><span class="fn">time</span><span class="op">() -</span> <span class="var">$_SESSION</span><span class="op">[</span><span class="str">'last_activity'</span><span class="op">]) ></span> <span class="var">$timeout</span><span class="op">) {</span>
+    <span class="fn">session_destroy</span><span class="op">();</span>
+    <span class="fn">header</span><span class="op">(</span><span class="str">"Location: login.php?expired=1"</span><span class="op">);</span>
+    <span class="kw">exit</span><span class="op">;</span>
+<span class="op">}</span>
+<span class="var">$_SESSION</span><span class="op">[</span><span class="str">'last_activity'</span><span class="op">]</span> <span class="op">=</span> <span class="fn">time</span><span class="op">();</span>
+<span class="php">?&gt;</span></pre>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SECTION 6: Function reference -->
+<section class="reveal">
+  <span class="section-num">// 06</span>
+  <h2>مرجع الدوال</h2>
+  <p>جميع دوال الـ Session في PHP مع شرح موجز لكل منها.</p>
+
+  <table class="fn-table">
+    <thead>
+      <tr>
+        <th>الدالة</th>
+        <th>الوصف</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="fn-name">session_start()</span></td>
+        <td>بدء جلسة جديدة أو استئناف جلسة موجودة</td>
+      </tr>
+      <tr>
+        <td><span class="fn-name">session_id()</span></td>
+        <td>الحصول على معرّف الجلسة الحالية أو تعيينه</td>
+      </tr>
+      <tr>
+        <td><span class="fn-name">session_name()</span></td>
+        <td>اسم الـ Cookie (افتراضي: PHPSESSID)</td>
+      </tr>
+      <tr>
+        <td><span class="fn-name">session_regenerate_id(true)</span></td>
+        <td>تجديد المعرّف وحذف الجلسة القديمة (للأمان)</td>
+      </tr>
+      <tr>
+        <td><span class="fn-name">session_unset()</span></td>
+        <td>حذف جميع متغيرات $_SESSION</td>
+      </tr>
+      <tr>
+        <td><span class="fn-name">session_destroy()</span></td>
+        <td>حذف ملف الجلسة من الخادم نهائيًا</td>
+      </tr>
+      <tr>
+        <td><span class="fn-name">session_get_cookie_params()</span></td>
+        <td>استرجاع إعدادات الـ Cookie الخاصة بالجلسة</td>
+      </tr>
+      <tr>
+        <td><span class="fn-name">session_status()</span></td>
+        <td>حالة الجلسة: PHP_SESSION_NONE / ACTIVE / DISABLED</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <p>PHP Sessions Guide &mdash; بُني بـ <span>❤</span> للمطورين العرب</p>
+  <p style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--muted);margin-top:0.5rem">session_destroy(); // end of guide</p>
+</footer>
+
+<script>
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement;
+    const pct = (h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100;
+    document.getElementById('progress').style.width = pct + '%';
+  });
+
+  // Reveal on scroll
+  const reveals = document.querySelectorAll('.reveal');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  reveals.forEach(r => obs.observe(r));
+
+  // Copy button
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    const text = pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => {
+        btn.textContent = 'copy';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
